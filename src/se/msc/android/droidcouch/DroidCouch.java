@@ -20,8 +20,16 @@ import android.util.Log;
 
 public class DroidCouch {
     static final String TAG = "DroidCouchLibrary";
+	private String hostUrl;
 
-    public static String convertStreamToString(InputStream is) {
+    public DroidCouch(String hostUrl) {
+    	this.setHostUrl(hostUrl);
+    }
+
+	protected DroidCouch() {
+	}
+
+	public static String convertStreamToString(InputStream is) {
         /*
          * To convert the InputStream to String we use the
          * BufferedReader.readLine() method. We iterate until the BufferedReader
@@ -52,9 +60,9 @@ public class DroidCouch {
         return sb.toString();
     }
 
-    public static boolean createDatabase(String hostUrl, String databaseName) {
+    public boolean createDatabase(String databaseName) {
         try {
-            HttpPut httpPutRequest = new HttpPut(hostUrl + databaseName);
+            HttpPut httpPutRequest = new HttpPut(getHostUrl() + databaseName);
             JSONObject jsonResult = sendCouchRequest(httpPutRequest);
             return jsonResult.getBoolean("ok");
         } catch (Exception e) {
@@ -66,10 +74,10 @@ public class DroidCouch {
     /**
      * @return the revision id of the created document
      */
-    public static String createDocument(String hostUrl, String databaseName,
+    public String createDocument(String databaseName,
             String docId, JSONObject jsonDoc) {
         try {
-            HttpPut httpPutRequest = new HttpPut(hostUrl + databaseName + "/"
+            HttpPut httpPutRequest = new HttpPut(getHostUrl() + databaseName + "/"
                     + docId);
             StringEntity body = new StringEntity(jsonDoc.toString(), "utf8");
             httpPutRequest.setEntity(body);
@@ -86,9 +94,9 @@ public class DroidCouch {
         return null;
     }
 
-    public static boolean deleteDatabase(String hostUrl, String databaseName) {
+    public boolean deleteDatabase(String databaseName) {
         try {
-            HttpDelete httpDeleteRequest = new HttpDelete(hostUrl
+            HttpDelete httpDeleteRequest = new HttpDelete(getHostUrl()
                     + databaseName);
             JSONObject jsonResult = sendCouchRequest(httpDeleteRequest);
             return jsonResult.getBoolean("ok");
@@ -101,11 +109,11 @@ public class DroidCouch {
     /**
      * @return true if document successfully deleted
      */
-    public static boolean deleteDocument(String hostUrl, String databaseName,
+    public boolean deleteDocument(String databaseName,
             String docId) {
         try {
-            JSONObject jsonDoc = getDocument(hostUrl, databaseName, docId);
-            return deleteDocument(hostUrl, databaseName, docId, jsonDoc
+            JSONObject jsonDoc = getDocument(databaseName, docId);
+            return deleteDocument(databaseName, docId, jsonDoc
                     .getString("_rev"));
         } catch (Exception e) {
             e.printStackTrace();
@@ -116,10 +124,10 @@ public class DroidCouch {
     /**
      * @return true if document successfully deleted
      */
-    public static boolean deleteDocument(String hostUrl, String databaseName,
+    public boolean deleteDocument(String databaseName,
             String docId, String rev) {
         try {
-            String url = hostUrl + databaseName + "/" + docId + "?rev=" + rev;
+            String url = getHostUrl() + databaseName + "/" + docId + "?rev=" + rev;
             HttpDelete httpDeleteRequest = new HttpDelete(url);
             JSONObject jsonResult = sendCouchRequest(httpDeleteRequest);
             if (jsonResult != null) {
@@ -131,14 +139,15 @@ public class DroidCouch {
         return false;
     }
 
-    public static JSONObject get(String url) {
+    public JSONObject get(String url) {
         DefaultHttpClient httpclient = new DefaultHttpClient();
         // Prepare a request object
-        HttpGet httpget = new HttpGet(url);
+        HttpGet httpget = new HttpGet(getHostUrl() + url);
         // Execute the request
         HttpResponse response;
         JSONObject json = null;
         try {
+        	signRequest(httpget);
             response = httpclient.execute(httpget);
             // Examine the response status
             Log.i(TAG, response.getStatusLine().toString());
@@ -169,13 +178,16 @@ public class DroidCouch {
         return json;
     }
 
-    /**
+    protected void signRequest(HttpUriRequest request) {
+	}
+
+	/**
      * @return the Json document
      */
-    public static JSONObject getDocument(String hostUrl, String databaseName,
+    public JSONObject getDocument(String databaseName,
             String docId) {
         try {
-            HttpGet httpGetRequest = new HttpGet(hostUrl + databaseName + "/"
+            HttpGet httpGetRequest = new HttpGet(getHostUrl() + databaseName + "/"
                     + docId);
             JSONObject jsonResult = sendCouchRequest(httpGetRequest);
             if (jsonResult != null) {
@@ -196,8 +208,9 @@ public class DroidCouch {
     /**
      * @return a Json object, null on error
      */
-    private static JSONObject sendCouchRequest(HttpUriRequest request) {
+    private JSONObject sendCouchRequest(HttpUriRequest request) {
         try {
+        	signRequest(request);
             HttpResponse httpResponse = (HttpResponse) new DefaultHttpClient()
                     .execute(request);
             HttpEntity entity = httpResponse.getEntity();
@@ -220,11 +233,11 @@ public class DroidCouch {
     /**
      * @return the revision id of the updated document
      */
-    public static String updateDocument(String hostUrl, String databaseName,
+    public String updateDocument(String databaseName,
             JSONObject jsonDoc) {
         try {
             String docId = jsonDoc.getString("_id");
-            HttpPut httpPutRequest = new HttpPut(hostUrl + databaseName + "/"
+            HttpPut httpPutRequest = new HttpPut(getHostUrl() + databaseName + "/"
                     + docId);
             StringEntity body = new StringEntity(jsonDoc.toString(), "utf8");
             httpPutRequest.setEntity(body);
@@ -244,9 +257,9 @@ public class DroidCouch {
     /**
      * @return a Json document with all documents in the database
      */
-    public static JSONObject getAllDocuments(String hostUrl, String databaseName) {
+    public JSONObject getAllDocuments(String databaseName) {
         try {
-            String url = hostUrl + databaseName
+            String url = getHostUrl() + databaseName
                     + "/_all_docs?include_docs=true";
             HttpGet httpGetRequest = new HttpGet(url);
             JSONObject jsonReceive = sendCouchRequest(httpGetRequest);
@@ -258,6 +271,14 @@ public class DroidCouch {
         }
         return null;
     }
+
+	public void setHostUrl(String hostUrl) {
+		this.hostUrl = hostUrl;
+	}
+
+	public String getHostUrl() {
+		return hostUrl;
+	}
 
     // public static JSONObject SendHttpPut(String url, JSONObject jsonObjSend)
     // {
