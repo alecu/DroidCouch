@@ -1,37 +1,34 @@
 package se.msc.android.droidcouch.ubuntuone;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import oauth.signpost.OAuthConsumer;
-import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
-import oauth.signpost.exception.OAuthCommunicationException;
-import oauth.signpost.exception.OAuthExpectationFailedException;
-import oauth.signpost.exception.OAuthMessageSignerException;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import se.msc.android.droidcouch.DroidCouch;
+import android.content.Context;
 
 public class UbuntuOneDroidCouch extends DroidCouch {
 	private final String ACCOUNT_URL = "https://one.ubuntu.com/api/account/";
-	private OAuthConsumer consumer;
 	private String couchRoot;
 	private int userId;
+	private UbuntuOneCredentials credentials;
 
-	public UbuntuOneDroidCouch() throws Exception {
+	public UbuntuOneDroidCouch(Context ctx) throws Exception {
 		super();
-		String consumer_key = "CONSUMER_KEY";
-		String consumer_secret = "CONSUMER_SECRET";
-		String access_token = "ACCESS_TOKEN";
-		String token_secret = "TOKEN_SECRET";
-		consumer = new CommonsHttpOAuthConsumer(consumer_key, consumer_secret);
-		consumer.setTokenWithSecret(access_token, token_secret);
+		credentials = new UbuntuOneCredentials(ctx);
 		findCouchRoot();
 	}
 
@@ -55,12 +52,10 @@ public class UbuntuOneDroidCouch extends DroidCouch {
 	private String decodePercentages(String substring) {
 		return substring.replace("%25", "%");
 	}
-	
+
 	private String getUrl(String url) throws Exception {
 		HttpGet request = new HttpGet(url);
-		consumer.sign(request);
-		HttpClient httpClient = new DefaultHttpClient();
-		HttpResponse response = httpClient.execute(request);
+		HttpResponse response = executeRequest(request);
 		HttpEntity entity = response.getEntity();
 		if (entity != null) {
 			InputStream instream = entity.getContent();
@@ -72,16 +67,35 @@ public class UbuntuOneDroidCouch extends DroidCouch {
 	}
 
 	@Override
-	public void signRequest(HttpUriRequest request) {
-		super.signRequest(request);
-		try {
-			consumer.sign(request);
-		} catch (OAuthMessageSignerException e) {
-			e.printStackTrace();
-		} catch (OAuthExpectationFailedException e) {
-			e.printStackTrace();
-		} catch (OAuthCommunicationException e) {
-			e.printStackTrace();
+	protected HttpResponse executeRequest(HttpUriRequest request)
+			throws ClientProtocolException, IOException {
+		DefaultHttpClient httpClient = new DefaultHttpClient();
+		HttpResponse response = null;
+		int retries = 3;
+
+		while (retries-- > 0) {
+			credentials.signRequest(request);
+			response = httpClient.execute(request);
+			int statusCode = response.getStatusLine().getStatusCode();
+			if (statusCode == 400 || statusCode == 401) {
+				String error = responseToString(response);
+				credentials.invalidate();
+			} else {
+				return response;
+			}
 		}
+		return response;
 	}
+
+	private String responseToString(HttpResponse response)
+			throws UnsupportedEncodingException, IOException {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(
+				response.getEntity().getContent(), "UTF-8"));
+		StringBuilder builder = new StringBuilder();
+		for (String line = null; (line = reader.readLine()) != null;) {
+			builder.append(line).append("\n");
+		}
+		return builder.toString();
+	}
+
 }

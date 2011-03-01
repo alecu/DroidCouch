@@ -11,7 +11,7 @@ import android.widget.TextView;
 public class TestClient extends Activity {
 
 
-    String DBNAME = "hackathon_5";
+    String DBNAME = "hackathon_83";
     String TEST_DOC_ID = "test_document_1";
 
 	private TextView view;
@@ -26,7 +26,7 @@ public class TestClient extends Activity {
         view.append("Running tests...\n\n");
         setContentView(view);
         try {
-        	droidCouch = new UbuntuOneDroidCouch();
+        	droidCouch = new UbuntuOneDroidCouch(this);
             testDatabaseDoesNotExist();
             testCreateDatabase();
             testGetDatabaseInfo();

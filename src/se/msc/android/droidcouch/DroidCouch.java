@@ -9,6 +9,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
@@ -140,15 +141,13 @@ public class DroidCouch {
     }
 
     public JSONObject get(String url) {
-        DefaultHttpClient httpclient = new DefaultHttpClient();
         // Prepare a request object
         HttpGet httpget = new HttpGet(getHostUrl() + url);
         // Execute the request
         HttpResponse response;
         JSONObject json = null;
         try {
-        	signRequest(httpget);
-            response = httpclient.execute(httpget);
+        	response = executeRequest(httpget);
             // Examine the response status
             Log.i(TAG, response.getStatusLine().toString());
 
@@ -177,9 +176,6 @@ public class DroidCouch {
         }
         return json;
     }
-
-    protected void signRequest(HttpUriRequest request) {
-	}
 
 	/**
      * @return the Json document
@@ -210,9 +206,7 @@ public class DroidCouch {
      */
     private JSONObject sendCouchRequest(HttpUriRequest request) {
         try {
-        	signRequest(request);
-            HttpResponse httpResponse = (HttpResponse) new DefaultHttpClient()
-                    .execute(request);
+            HttpResponse httpResponse = executeRequest(request); 
             HttpEntity entity = httpResponse.getEntity();
             if (entity != null) {
                 // Read the content stream
@@ -229,6 +223,10 @@ public class DroidCouch {
         }
         return null;
     }
+
+	protected HttpResponse executeRequest(HttpUriRequest request) throws ClientProtocolException, IOException {
+        return (HttpResponse) new DefaultHttpClient().execute(request);
+	}
 
     /**
      * @return the revision id of the updated document
