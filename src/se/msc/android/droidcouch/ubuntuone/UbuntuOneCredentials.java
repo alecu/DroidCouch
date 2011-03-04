@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.concurrent.SynchronousQueue;
 
 import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
 import oauth.signpost.exception.OAuthException;
@@ -21,16 +22,12 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
+import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.preference.PreferenceManager;
 
 public class UbuntuOneCredentials {
-
-	private static final String USERNAME = "";
-	private static final String PASSWORD = "";
-
 	private static final String BASE_TOKEN_NAME = "Ubuntu One @ ";
 	private static final String CONSUMER_KEY = "consumer_key";
 	private static final String CONSUMER_SECRET = "consumer_secret";
@@ -49,9 +46,11 @@ public class UbuntuOneCredentials {
 	private SharedPreferences.Editor prefsEditor;
 
 	private CommonsHttpOAuthConsumer consumer;
+	private final DroidCouchActivity droidCouchActivity;
 
-	public UbuntuOneCredentials(Context ctx) {
-		prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+	public UbuntuOneCredentials(DroidCouchActivity activity) {
+		this.droidCouchActivity = activity;
+		prefs = PreferenceManager.getDefaultSharedPreferences(activity);
 		prefsEditor = prefs.edit();
 	}
 
@@ -83,18 +82,19 @@ public class UbuntuOneCredentials {
 			} catch (OAuthException e) {
 				e.printStackTrace();
 			}
-			login(USERNAME, PASSWORD);
+			login();
 		}
 	}
 
-	private void login(String username, String password) {
+	private void login() {
 		invalidate();
-		DefaultHttpClient httpClient = new DefaultHttpClient();
-		httpClient.getCredentialsProvider().setCredentials(
-				new AuthScope(LOGIN_HOST, LOGIN_PORT),
-				new UsernamePasswordCredentials(username, password));
-		HttpUriRequest request = new HttpGet(buildLoginUrl());
 		try {
+			UserPassword userpass = promptUserPassword();
+			DefaultHttpClient httpClient = new DefaultHttpClient();
+			httpClient.getCredentialsProvider().setCredentials(
+					new AuthScope(LOGIN_HOST, LOGIN_PORT),
+					new UsernamePasswordCredentials(userpass.getUsername(), userpass.getPassword()));
+			HttpUriRequest request = new HttpGet(buildLoginUrl());
 			HttpResponse response = httpClient.execute(request);
 			verifyResponse(response);
 			JSONObject loginData = responseToJson(response);
@@ -102,7 +102,7 @@ public class UbuntuOneCredentials {
 					.getString(CONSUMER_SECRET), loginData
 					.getString(ACCESS_TOKEN), loginData.getString(TOKEN_SECRET));
 			buildConsumer();
-			ping_u1_url(username);
+			ping_u1_url(userpass.getUsername());
 		} catch (ClientProtocolException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -111,7 +111,20 @@ public class UbuntuOneCredentials {
 			e.printStackTrace();
 		} catch (HttpError e) {
 			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
+	}
+
+	private UserPassword promptUserPassword() throws InterruptedException {
+		final SynchronousQueue<UserPassword> queue = new SynchronousQueue<UserPassword>();
+		droidCouchActivity.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				droidCouchActivity.promptUserPassword(queue);
+			}
+		});
+		return queue.take();
 	}
 
 	private void ping_u1_url(String username) {

@@ -2,30 +2,35 @@ package se.msc.android.droidcouch;
 
 import org.json.JSONObject;
 
+import se.msc.android.droidcouch.ubuntuone.DroidCouchActivity;
 import se.msc.android.droidcouch.ubuntuone.UbuntuOneDroidCouch;
-
-import android.app.Activity;
 import android.os.Bundle;
 import android.widget.TextView;
 
-public class TestClient extends Activity {
-
-
+public class TestClient extends DroidCouchActivity {
     String DBNAME = "hackathon_83";
     String TEST_DOC_ID = "test_document_1";
 
-	private TextView view;
-
 	private DroidCouch droidCouch;
+	private TextView view;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-    	String HOST = "http://192.168.1.10:5984/";
-        super.onCreate(savedInstanceState);
+    	super.onCreate(savedInstanceState);
         view = new TextView(this);
         view.append("Running tests...\n\n");
         setContentView(view);
-        try {
+        
+        new Thread(new Runnable() {
+			@Override
+			public void run() {
+				runAllTests();
+			}
+		}).run();
+    }
+    
+	private void runAllTests() {
+		try {
         	droidCouch = new UbuntuOneDroidCouch(this);
             testDatabaseDoesNotExist();
             testCreateDatabase();
@@ -36,14 +41,22 @@ public class TestClient extends Activity {
             testUpdateDocument();
             testDeleteDocument();
             testDeleteDatabase();
-            view.append("All tests passed!");
+            appendView("All tests passed!");
         } catch (Exception e) {
-            String trace = DroidCouch.getStacktrace(e);
-            view.append(trace);
+            appendView(DroidCouch.getStacktrace(e));
         }
-    }
+	}
 
-    public void testCreateDatabase() throws Exception {
+    private void appendView(final String message) {
+    	runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				view.append(message);
+			}
+		});
+	}
+
+	public void testCreateDatabase() throws Exception {
         boolean result = droidCouch.createDatabase(DBNAME);
         shouldBeTrue(result, "Database could not be created!");
     }
@@ -53,8 +66,8 @@ public class TestClient extends Activity {
         JSONObject responseObject = droidCouch.get(couchUrl);
         String error = responseObject.getString("error");
         String reason = responseObject.getString("reason");
-        shouldBeTrue(error.equals("not_found"), "Incorrect message recieved");
-        shouldBeTrue(reason.equals("no_db_file"), "Incorrect message recieved");
+        shouldBeTrue(error.equals("not_found"), "Incorrect message received");
+        shouldBeTrue(reason.equals("no_db_file"), "Incorrect message received");
     }
 
     public void testDeleteDatabase() throws Exception {
@@ -66,7 +79,7 @@ public class TestClient extends Activity {
         String couchUrl = DBNAME;
         JSONObject responseObject = droidCouch.get(couchUrl);
         String actualDbName = responseObject.getString("db_name");
-        shouldBeTrue(actualDbName.endsWith(DBNAME), "Incorrect message recieved");
+        shouldBeTrue(actualDbName.endsWith(DBNAME), "Incorrect message received");
     }
 
     public void testCreateDocument() throws Exception {
@@ -107,7 +120,6 @@ public class TestClient extends Activity {
         shouldBeTrue(responseObject.has("total_rows"),
                 "Incorrect message recieved");
     }
-
  
     public void testPutAttachment() throws Exception {
     }

@@ -10,15 +10,13 @@ import java.net.URI;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import se.msc.android.droidcouch.DroidCouch;
-import android.content.Context;
+import android.app.Activity;
 
 public class UbuntuOneDroidCouch extends DroidCouch {
 	private final String ACCOUNT_URL = "https://one.ubuntu.com/api/account/";
@@ -26,9 +24,9 @@ public class UbuntuOneDroidCouch extends DroidCouch {
 	private int userId;
 	private UbuntuOneCredentials credentials;
 
-	public UbuntuOneDroidCouch(Context ctx) throws Exception {
+	public UbuntuOneDroidCouch(DroidCouchActivity droidCouchActivity) throws Exception {
 		super();
-		credentials = new UbuntuOneCredentials(ctx);
+		credentials = new UbuntuOneCredentials(droidCouchActivity);
 		findCouchRoot();
 	}
 
@@ -78,7 +76,6 @@ public class UbuntuOneDroidCouch extends DroidCouch {
 			response = httpClient.execute(request);
 			int statusCode = response.getStatusLine().getStatusCode();
 			if (statusCode == 400 || statusCode == 401) {
-				String error = responseToString(response);
 				credentials.invalidate();
 			} else {
 				return response;

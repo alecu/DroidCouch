@@ -27,7 +27,7 @@ public class CouchDatabase {
 
     public CouchDatabase(String name, CouchServer server)
     {
-        name = name;
+        this.name = name;
         Server = server;
     }
 

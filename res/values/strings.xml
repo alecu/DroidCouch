@@ -2,4 +2,9 @@
 <resources>
     <string name="hello">Running tests...\n\n</string>
     <string name="app_name">DroidCouch Test client</string>
+
+    <string name="login_dialog_title">Log into Ubuntu One</string>
+    <string name="username_label">Email:</string>
+    <string name="password_label">Password:</string>
+    <string name="login_label">Login</string>
 </resources>
