@@ -7,6 +7,9 @@ import se.msc.android.droidcouch.ubuntuone.UbuntuOneDroidCouch;
 import android.os.Bundle;
 import android.widget.TextView;
 
+/**
+ * Tests for all DroidCouch methods.  
+ */
 public class TestClient extends DroidCouchActivity {
     String DBNAME = "hackathon_83";
     String TEST_DOC_ID = "test_document_1";

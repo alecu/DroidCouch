@@ -1,10 +1,7 @@
 package se.msc.android.droidcouch.ubuntuone;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 
 import org.apache.http.HttpEntity;
@@ -16,20 +13,39 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONObject;
 
 import se.msc.android.droidcouch.DroidCouch;
-import android.app.Activity;
 
+/**
+ * Similar to DroidCouch but using Ubuntu One CouchDB servers.
+ * 
+ * NOTE: Make sure to create and use instances of this class
+ * from a worker thread (that is, never use it in the UI thread).
+ *
+ * @author Alejandro J. Cura <alecu@canonical.com>
+ */
 public class UbuntuOneDroidCouch extends DroidCouch {
 	private final String ACCOUNT_URL = "https://one.ubuntu.com/api/account/";
 	private String couchRoot;
+	@SuppressWarnings("unused")
 	private int userId;
 	private UbuntuOneCredentials credentials;
 
+	/**
+	 * Create a new instance of this class. 
+	 * 
+	 * @param droidCouchActivity an activity that may handle the login dialog if needed.
+	 * @throws Exception some error that occurred while creating this instance. 
+	 */
 	public UbuntuOneDroidCouch(DroidCouchActivity droidCouchActivity) throws Exception {
 		super();
 		credentials = new UbuntuOneCredentials(droidCouchActivity);
 		findCouchRoot();
 	}
 
+	/**
+	 * Find the root url for the users' Ubuntu One CouchDB servers
+	 * 
+	 * @throws Exception some problem that happened while getting at the root url
+	 */
 	private void findCouchRoot() throws Exception {
 		String content = getUrl(ACCOUNT_URL);
 		JSONObject accountInfo = new JSONObject(content);
@@ -43,14 +59,34 @@ public class UbuntuOneDroidCouch extends DroidCouch {
 		setHostUrl(couchRoot);
 	}
 
+	/**
+	 * Encode slashes as %2F
+	 * 
+	 * @param substring what to encode
+	 * @return the encoded string
+	 */
 	private String encodeSlashes(String substring) {
 		return substring.replace("/", "%2F");
 	}
 
+	/**
+	 * Decode each %25 as a percentage symbol
+	 *  
+	 * @param substring what to decode
+	 * @return the decoded string
+	 */
 	private String decodePercentages(String substring) {
 		return substring.replace("%25", "%");
 	}
 
+	
+	/**
+	 * Get the contents of a given url.
+	 * 
+	 * @param url the url to get
+	 * @return a string with the contents
+	 * @throws Exception with some error that prevented execution
+	 */
 	private String getUrl(String url) throws Exception {
 		HttpGet request = new HttpGet(url);
 		HttpResponse response = executeRequest(request);
@@ -64,6 +100,9 @@ public class UbuntuOneDroidCouch extends DroidCouch {
 		return null;
 	}
 
+	/* Execute an http request, signing, retrying and logging in if needed
+	 * @see se.msc.android.droidcouch.DroidCouch#executeRequest(org.apache.http.client.methods.HttpUriRequest)
+	 */
 	@Override
 	protected HttpResponse executeRequest(HttpUriRequest request)
 			throws ClientProtocolException, IOException {
@@ -82,17 +121,6 @@ public class UbuntuOneDroidCouch extends DroidCouch {
 			}
 		}
 		return response;
-	}
-
-	private String responseToString(HttpResponse response)
-			throws UnsupportedEncodingException, IOException {
-		BufferedReader reader = new BufferedReader(new InputStreamReader(
-				response.getEntity().getContent(), "UTF-8"));
-		StringBuilder builder = new StringBuilder();
-		for (String line = null; (line = reader.readLine()) != null;) {
-			builder.append(line).append("\n");
-		}
-		return builder.toString();
 	}
 
 }

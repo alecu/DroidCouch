@@ -19,10 +19,18 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONObject;
 import android.util.Log;
 
+/**
+ * Class to query a CouchDB database. 
+ */
 public class DroidCouch {
     static final String TAG = "DroidCouchLibrary";
 	private String hostUrl;
 
+    /**
+     * Create an instance of this class given the base url
+     * 
+     * @param hostUrl the base url to the CouchDB server 
+     */
     public DroidCouch(String hostUrl) {
     	this.setHostUrl(hostUrl);
     }
@@ -30,6 +38,12 @@ public class DroidCouch {
 	protected DroidCouch() {
 	}
 
+	/**
+	 * Fetch all contents from a stream and make a string out of it
+	 * 
+	 * @param is the input stream
+	 * @return all the contents of the stream
+	 */
 	public static String convertStreamToString(InputStream is) {
         /*
          * To convert the InputStream to String we use the
@@ -61,6 +75,12 @@ public class DroidCouch {
         return sb.toString();
     }
 
+    /**
+     * Create a new Couch database in the server
+     * 
+     * @param databaseName the name for the new database
+     * @return true if the database was created
+     */
     public boolean createDatabase(String databaseName) {
         try {
             HttpPut httpPutRequest = new HttpPut(getHostUrl() + databaseName);
@@ -73,6 +93,11 @@ public class DroidCouch {
     }
 
     /**
+     * Create a new json document in the given database
+     * 
+     * @param databaseName the name of an existing database
+     * @param docId the document id for the new document
+     * @param jsonDoc the json contents for the new document
      * @return the revision id of the created document
      */
     public String createDocument(String databaseName,
@@ -95,6 +120,12 @@ public class DroidCouch {
         return null;
     }
 
+    /**
+     * Delete a given Couch database in the server
+     * 
+     * @param databaseName the name of the database to delete
+     * @return true if the database was deleted
+     */
     public boolean deleteDatabase(String databaseName) {
         try {
             HttpDelete httpDeleteRequest = new HttpDelete(getHostUrl()
@@ -108,6 +139,10 @@ public class DroidCouch {
     }
 
     /**
+     * Delete a given document from a Couch database
+     * 
+     * @param databaseName the name of the database
+     * @param docId the id of the document to delete
      * @return true if document successfully deleted
      */
     public boolean deleteDocument(String databaseName,
@@ -123,6 +158,11 @@ public class DroidCouch {
     }
 
     /**
+     * Delete a given revision of a given document
+     * 
+     * @param databaseName the name of the database
+     * @param docId the id of the document to delete
+     * @param rev the revision to delete 
      * @return true if document successfully deleted
      */
     public boolean deleteDocument(String databaseName,
@@ -140,6 +180,12 @@ public class DroidCouch {
         return false;
     }
 
+    /**
+     * Do a freeform couch query, by specifying a url path in the server  
+     * 
+     * @param url the url path to query, will be added to the base server url
+     * @return the json found at that server url
+     */
     public JSONObject get(String url) {
         // Prepare a request object
         HttpGet httpget = new HttpGet(getHostUrl() + url);
@@ -178,6 +224,10 @@ public class DroidCouch {
     }
 
 	/**
+	 * Get a given couch document
+	 * 
+	 * @param databaseName the name of the database
+	 * @param docId the id for the document
      * @return the Json document
      */
     public JSONObject getDocument(String databaseName,
@@ -195,6 +245,12 @@ public class DroidCouch {
         return null;
     }
 
+    /**
+     * Formats an exception as a string
+     *  
+     * @param e the exception to format
+     * @return a string description of the exception
+     */
     public static String getStacktrace(Throwable e) {
         final Writer trace = new StringWriter();
         e.printStackTrace(new PrintWriter(trace));
@@ -202,7 +258,10 @@ public class DroidCouch {
     }
 
     /**
-     * @return a Json object, null on error
+     * Send a miscellaneous couch query to the server
+     * 
+     * @param an http request to send
+     * @return the result as a Json object, null on error
      */
     private JSONObject sendCouchRequest(HttpUriRequest request) {
         try {
@@ -229,6 +288,10 @@ public class DroidCouch {
 	}
 
     /**
+     * Update a given document in the couch database 
+     * 
+     * @param databaseName the name of the Couch database
+     * @param jsonDoc the record to update 
      * @return the revision id of the updated document
      */
     public String updateDocument(String databaseName,
@@ -253,7 +316,10 @@ public class DroidCouch {
     }
 
     /**
-     * @return a Json document with all documents in the database
+     * Fetch all documents from the Couch database
+     * 
+     * @param databaseName the name of the Couch database
+     * @return a JSON object with all documents in the database
      */
     public JSONObject getAllDocuments(String databaseName) {
         try {
@@ -270,10 +336,21 @@ public class DroidCouch {
         return null;
     }
 
+	/**
+	 * Set the base url for the Couch server
+	 * 
+	 * @param hostUrl the base url
+	 */
 	public void setHostUrl(String hostUrl) {
 		this.hostUrl = hostUrl;
 	}
 
+	
+	/**
+	 * Get the base url for the Couch server
+	 * 
+	 * @return the base url
+	 */
 	public String getHostUrl() {
 		return hostUrl;
 	}
