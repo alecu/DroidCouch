@@ -1,5 +1,7 @@
 package se.msc.android.droidcouch.ubuntuone.samples;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import se.msc.android.droidcouch.DroidCouch;
@@ -44,8 +46,30 @@ public class RetrieveNotesTask extends AsyncTask<Void, Void, JSONObject> {
 	@Override
 	protected void onPostExecute(JSONObject result) {
 		super.onPostExecute(result);
-		if (result != null) {
-			activity.appendString(result.toString());
+		try {
+			JSONArray rows = result.getJSONArray("rows");
+			for (int i = 0; i < rows.length(); i++) {
+				JSONObject doc = rows.getJSONObject(i).getJSONObject("doc");
+				String title = doc.getString("title");
+				String body = doc.getString("content");
+				if (!isDeleted(doc)) {
+					activity.appendNote(title, body);
+				} else {
+					activity.appendNote(title + " (deleted)", body);
+				}
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
 		}
+	}
+
+	private boolean isDeleted(JSONObject doc) throws JSONException {
+		JSONObject app_anotations = doc.getJSONObject("application_annotations");
+		JSONObject ubuntuone_annotations = app_anotations.optJSONObject("Ubuntu One");
+		if (ubuntuone_annotations != null) {
+			JSONObject private_app_annotations = ubuntuone_annotations.getJSONObject("private_application_annotations");
+			return private_app_annotations.getBoolean("deleted");
+		}
+		return false;
 	}
 }

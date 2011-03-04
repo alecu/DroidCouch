@@ -1,9 +1,12 @@
 package se.msc.android.droidcouch.ubuntuone.samples;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import se.msc.android.droidcouch.R;
 import se.msc.android.droidcouch.ubuntuone.DroidCouchActivity;
 import android.os.Bundle;
-import android.text.method.ScrollingMovementMethod;
-import android.widget.TextView;
+import android.widget.ListView;
 
 /**
  * Sample activity that fetches the CouchDB of notes, and shows them on a list.
@@ -11,26 +14,26 @@ import android.widget.TextView;
  * @author Alejandro J. Cura <alecu@canonical.com>
  */
 public class SampleUbuntuOneNotesViewer extends DroidCouchActivity {
-	private TextView view;
+	private ListView view;
+	private List<Note> items = new ArrayList<Note>();
+	private NoteArrayAdapter noteArrayAdapter;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-        view = new TextView(this);
-        view.setMovementMethod(ScrollingMovementMethod.getInstance());
-        setContentView(view);
-        appendString("Connecting to couchdb server...\n\n");
+        view = new ListView(this);
+        noteArrayAdapter = new NoteArrayAdapter(this, R.layout.sample_notes_item, items);
+		view.setAdapter(noteArrayAdapter);
+		setContentView(view);
 
         // Start a task that will retrieve the notes in a new thread
-        // and that will call appendString in the UI thread 
+        // and that will add each note in the UI thread 
         // after the notes are retrieved.
         new RetrieveNotesTask(this).execute();
 	}
 
-	public void appendString(String string) {
-		if (view != null && view.isShown()) {
-			view.append(string);
-		}
+	public void appendNote(String title, String body) {
+		noteArrayAdapter.add(new Note(title, body));
 	}
 	
 }
